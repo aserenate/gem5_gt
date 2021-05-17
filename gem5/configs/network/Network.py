@@ -66,10 +66,10 @@ def define_options(parser):
                             inside garnet network.""")
     parser.add_option("--buffers-per-ctrl-vc", action="store", type="int", default=16,
                       help="number of buffers in each ctrl VC.")
-    parser.add_option("--buffers-per-data-vc", action="store", type="int", default=4,
+    parser.add_option("--buffers-per-data-vc", action="store", type="int", default=5,
                       help="number of buffers in each data VC.")
     parser.add_option("--wormhole", action="store_true",
-                      default=False,
+                      default=True,
                       help="enable wormhole")
     parser.add_option("--routing-algorithm", type="choice",
                       default="xy",
@@ -153,6 +153,7 @@ def init_network(options, network, InterfaceClass):
         network.setup_buffers()
 
     if InterfaceClass != None:
+        print "fanxi added in Network.py, now new netifs"
         netifs = [InterfaceClass(id=i) \
                   for (i,n) in enumerate(network.ext_links)]
         network.netifs = netifs

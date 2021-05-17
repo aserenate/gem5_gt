@@ -60,7 +60,7 @@ parser.add_option("--precision", type="int", default=3,
                   help="Number of digits of precision after decimal point\
                         for injection rate")
 
-parser.add_option("--sim-cycles", type="int", default=1000,
+parser.add_option("--sim-cycles", type="int", default=20000,
                    help="Number of simulation cycles")
 
 parser.add_option("--num-packets-max", type="int", default=-1,
@@ -79,6 +79,9 @@ parser.add_option("--inj-vnet", type="int", default=-1,
                   help="Only inject in this vnet (0, 1 or 2).\
                         0 and 1 are 1-flit, 2 is 5-flit.\
                         Set to -1 to inject randomly in all vnets.")
+
+parser.add_option("--link_width_bits", type="int", default=128,
+                  help="default = 128 bit")
 
 #
 # Add the ruby specific and protocol specific options
@@ -123,7 +126,9 @@ system.voltage_domain = VoltageDomain(voltage = options.sys_voltage)
 system.clk_domain = SrcClockDomain(clock = options.sys_clock,
                                    voltage_domain = system.voltage_domain)
 
+print "fanxi added in garnet_synth_traffic.py now create_system"
 Ruby.create_system(options, False, system)
+
 
 # Create a seperate clock domain for Ruby
 system.ruby.clk_domain = SrcClockDomain(clock = options.ruby_clock,
@@ -134,6 +139,7 @@ for ruby_port in system.ruby._cpu_ports:
      #
      # Tie the cpu test ports to the ruby cpu port
      #
+     print "fanxi added in garnet_synth_traffic.py now Tie the cpu test ports to the ruby cpu port"
      cpus[i].test = ruby_port.slave
      i += 1
 
