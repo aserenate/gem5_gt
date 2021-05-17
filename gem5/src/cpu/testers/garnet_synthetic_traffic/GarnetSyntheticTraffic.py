@@ -37,7 +37,7 @@ class GarnetSyntheticTraffic(MemObject):
     block_offset = Param.Int(6, "block offset in bits")
     num_dest = Param.Int(1, "Number of Destinations")
     memory_size = Param.Int(65536, "memory size")
-    sim_cycles = Param.Int(1000, "Number of simulation cycles")
+    sim_cycles = Param.Int(20000, "Number of simulation cycles")
     num_packets_max = Param.Int(-1, "Max number of packets to send. \
                         Default is to keep sending till simulation ends")
     single_sender = Param.Int(-1, "Send only from this node. \
@@ -51,7 +51,7 @@ class GarnetSyntheticTraffic(MemObject):
                                 Default is to inject in all three vnets")
     precision = Param.Int(3, "Number of digits of precision \
                               after decimal point")
-    response_limit = Param.Cycles(5000000, "Cycles before exiting \
+    response_limit = Param.Cycles(5000000000, "Cycles before exiting \
                                             due to lack of progress")
     test = MasterPort("Port to the memory system to test")
     system = Param.System(Parent.any, "System we belong to")

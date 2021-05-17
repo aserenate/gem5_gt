@@ -48,7 +48,6 @@
 
 class MessageBuffer;
 class flitBuffer;
-
 class NetworkInterface : public ClockedObject, public Consumer
 {
   public:
@@ -61,11 +60,14 @@ class NetworkInterface : public ClockedObject, public Consumer
     void addInPort(NetworkLink *in_link, CreditLink *credit_link);
     void addOutPort(NetworkLink *out_link, CreditLink *credit_link,
         SwitchID router_id);
-
+    // wxy add in 4.6
+    void updateStats(int vnet);
+    
     void dequeueCallback();
     void wakeup();
     void addNode(std::vector<MessageBuffer *> &inNode,
                  std::vector<MessageBuffer *> &outNode);
+
 
     void print(std::ostream& out) const;
     int get_vnet(int vc);
@@ -73,12 +75,16 @@ class NetworkInterface : public ClockedObject, public Consumer
     void init_net_ptr(GarnetNetwork *net_ptr) { m_net_ptr = net_ptr; }
 
     uint32_t functionalWrite(Packet *);
+    std::vector <int> num_recv_packet;
 
   private:
     GarnetNetwork *m_net_ptr;
     const NodeID m_id;
     const int m_virtual_networks, m_vc_per_vnet, m_num_vcs;
     int m_router_id; // id of my router
+    int m_data; // wxy add
+    int m_data_num; // wxy add
+    int m_flit_num;
     std::vector<OutVcState *> m_out_vc_state;
     std::vector<int> m_vc_allocator;
     int m_vc_round_robin; // For round robin scheduling
@@ -116,6 +122,9 @@ class NetworkInterface : public ClockedObject, public Consumer
     void sendCredit(flit *t_flit, bool is_free);
 
     void incrementStats(flit *t_flit);
+    void recv_flit_info(flit *t_flit, int id);
+    int get_send_data(int id);
 };
 
 #endif // __MEM_RUBY_NETWORK_GARNET2_0_NETWORKINTERFACE_HH__
+ 

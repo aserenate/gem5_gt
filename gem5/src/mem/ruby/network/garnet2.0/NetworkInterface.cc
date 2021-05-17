@@ -36,6 +36,9 @@
 #include <cassert>
 #include <cmath>
 
+#include<fstream>
+#include<iostream>
+
 #include "base/cast.hh"
 #include "base/stl_helpers.hh"
 #include "debug/RubyNetwork.hh"
@@ -47,6 +50,12 @@
 using namespace std;
 using m5::stl_helpers::deletePointers;
 
+# define NI_output_file (std::string("./../output_info/cpu_output_task_VGG_our_ga_all/"))
+# define recv_packet_folder        (std::string("./../recv/packet_num/"))
+# define node2ni_folder            (std::string("./../recv/node2ni/"))
+# define node_num       (int(144))
+# define pic_num_1      (int(0))
+
 NetworkInterface::NetworkInterface(const Params *p)
     : ClockedObject(p), Consumer(this), m_id(p->id),
       m_virtual_networks(p->virt_nets), m_vc_per_vnet(p->vcs_per_vnet),
@@ -54,12 +63,14 @@ NetworkInterface::NetworkInterface(const Params *p)
       m_deadlock_threshold(p->garnet_deadlock_threshold),
       vc_busy_counter(m_virtual_networks, 0)
 {
+    num_recv_packet.resize(pic_num_1+1,0);
     m_router_id = -1;
     m_vc_round_robin = 0;
     m_ni_out_vcs.resize(m_num_vcs);
     m_ni_out_vcs_enqueue_time.resize(m_num_vcs);
     outCreditQueue = new flitBuffer();
 
+    m_data_num = 0;
     // instantiating the NI flit buffers
     for (int i = 0; i < m_num_vcs; i++) {
         m_ni_out_vcs[i] = new flitBuffer();
@@ -74,12 +85,55 @@ NetworkInterface::NetworkInterface(const Params *p)
     m_stall_count.resize(m_virtual_networks);
 }
 
+vector<string> split_1(const string &str, const string &pattern)
+{
+    vector<string> res;
+    if(str == "")
+        return res;
+    //在字符串末尾也加入分隔符，方便截取最后一段
+    string strs = str + pattern;
+    size_t pos = strs.find(pattern);
+
+    while(pos != strs.npos)
+    {
+        string temp = strs.substr(0, pos);
+        res.push_back(temp);
+        //去掉已分割的字符串,在剩下的字符串中进行分割
+        strs = strs.substr(pos+1, strs.size());
+        pos = strs.find(pattern);
+    }
+
+    return res;
+}
+
+void init_recv_file(int id){
+    std::string file;
+    for(int i = 0; i < pic_num_1+1; i++){
+        file = recv_packet_folder+std::to_string(id)+"_"+std::to_string(i)+".txt";
+	    ofstream OutFile(file); 
+        OutFile.close();
+    }
+}
+
+void init_file(std::string file){
+    ofstream OutFile(file); 
+    OutFile.close();
+}
+
 void
 NetworkInterface::init()
 {
     for (int i = 0; i < m_num_vcs; i++) {
         m_out_vc_state.push_back(new OutVcState(i, m_net_ptr));
     }
+    m_data_num = 0;
+    if(m_id >= node_num)
+        init_recv_file(m_id-node_num);
+    
+    init_file("./../output_info/packet_recv_inject/link_utilization.txt");
+    init_file("./../output_info/packet_recv_inject/0.txt");
+    init_file("./../output_info/packet_recv_inject/1.txt");
+    init_file("./../output_info/packet_recv_inject/2.txt");
 }
 
 NetworkInterface::~NetworkInterface()
@@ -183,6 +237,117 @@ NetworkInterface::incrementStats(flit *t_flit)
  * downstream router.
  */
 
+void update_recv_packets(int id,int num_recv_packet, int pic_num)
+{
+	std::string file;
+	file = recv_packet_folder+std::to_string(id)+"_"+std::to_string(pic_num)+".txt";
+	ofstream OutFile(file);
+	OutFile << std::to_string(num_recv_packet); 
+    //std::cout<<"fanxi added, update_recv_packets ing, id= " << id <<" packets="<<num_recv_packet<<std::endl;
+	OutFile.close();        
+}
+
+void output_line(int id, std::string line){
+    std::string file;
+    file = NI_output_file + std::to_string(id) + ".txt";
+    fstream f;
+    //追加写入,在原来基础上加了ios::app 
+    f.open(file,ios::out|ios::app);
+    f<<line<<endl; 
+    f.close(); 
+}
+//wxy add in 4.10
+//增加每个节点接收到数据的信息
+void update_recv_info(int id, int src, int time, int pic){
+    std::string file;
+    file = NI_output_file + std::to_string(id) + ".txt";
+    fstream f;
+    std::string message_to_write;
+
+    message_to_write.append("Receive_Packet_form_node ");
+    message_to_write.append(std::to_string(src));
+    message_to_write.append(" at_time ");
+    message_to_write.append(std::to_string(time));
+    message_to_write.append(" pic_num ");
+    message_to_write.append(std::to_string(pic));
+    //追加写入,在原来基础上加了ios::app 
+    f.open(file,ios::out|ios::app);
+    f<<message_to_write<<endl; 
+    f.close(); 
+    //std::cout<<"fanxi added, tell_mem_send_data ing, id= " << id << std::endl;
+}
+
+//wxy add in 3.31
+//总结每个尾部flit的有关latency的信息，输出到flit_out文件夹
+void
+NetworkInterface:: recv_flit_info(flit *t_flit, int id)
+{
+	std::string file;
+	file = "./../output_info/flit_out/"+std::to_string(id)+".txt";
+	ofstream OutFile;
+    OutFile.open(file,ios::app);
+    Cycles network_delay =
+        t_flit->get_dequeue_time() - t_flit->get_enqueue_time() - Cycles(1);
+    Cycles src_queueing_delay = t_flit->get_src_delay();
+    Cycles dest_queueing_delay = curCycle() - t_flit->get_dequeue_time();
+    Cycles queueing_delay = src_queueing_delay + dest_queueing_delay;
+    OutFile<<std::endl;
+    OutFile<< "CurTick="<<curTick()<<" : [ network_delay="<<network_delay<<" "<<"src_queueing_delay="<<src_queueing_delay<<" dest_queueing_delay="<<dest_queueing_delay<<" queueing_delay="<<queueing_delay<<" ]"<<std::endl;
+    t_flit->print(OutFile);
+	OutFile.close();        
+}
+
+void outputMessage_1(std::string line, std::string filename)
+{
+    std::string file;
+    file = "./../output_info/" + filename;
+    fstream f;
+    f.open(file,ios::out|ios::app);
+    f<<line<<std::endl; 
+    f.close(); 
+}
+//wxy add in 4.6
+void
+NetworkInterface::updateStats(int vnet)
+{
+    Cycles time_cur = curCycle();
+    std::vector<int> link_util;
+    link_util = m_net_ptr->get_link_utilization();
+    if (link_util[0] == 1){
+        std::string message_t_write;
+        int total_utilization = link_util[2];
+        int total_ext_in_link_utilization = link_util[3];
+        int total_ext_out_link_utilization = link_util[4];
+        int total_int_link_utilization = link_util[5];
+        message_t_write.append("curTime : ");
+        message_t_write.append(std::to_string(link_util[1]));
+        message_t_write.append("  ; total_utilization : ");
+        message_t_write.append(std::to_string(total_utilization));
+        message_t_write.append("  ; total_ext_in_link_utilization : ");
+        message_t_write.append(std::to_string(total_ext_in_link_utilization));
+        message_t_write.append("  ; total_ext_out_link_utilization : ");
+        message_t_write.append(std::to_string(total_ext_out_link_utilization));
+        message_t_write.append("  ; total_int_link_utilization : ");
+        message_t_write.append(std::to_string(total_int_link_utilization));
+        std::string filename;
+        filename = "packet_recv_inject/link_utilization.txt";
+        outputMessage_1(message_t_write, filename);
+    }
+    
+    std::string message_to_write;
+    int injected_packets = m_net_ptr->get_injected_packets(vnet);
+    int received_packets = m_net_ptr->get_received_packets(vnet);
+    message_to_write.append("  ; curTime : ");
+    message_to_write.append(std::to_string(time_cur));
+    message_to_write.append("  ; injected_packets_num : ");
+    message_to_write.append(std::to_string(injected_packets));
+    message_to_write.append("  ; received_packets_num : ");
+    message_to_write.append(std::to_string(received_packets));
+    std::string filename;
+    filename = "packet_recv_inject/" + std::to_string(vnet)+".txt";
+    outputMessage_1(message_to_write, filename);
+}
+
 void
 NetworkInterface::wakeup()
 {
@@ -196,6 +361,9 @@ NetworkInterface::wakeup()
     // can pick up a message/cycle for each virtual net
     for (int vnet = 0; vnet < inNode_ptr.size(); ++vnet) {
         MessageBuffer *b = inNode_ptr[vnet];
+        if(m_id == 0 && curCycle() % 1000 == 0)
+            updateStats(vnet);
+
         if (b == nullptr) {
             continue;
         }
@@ -220,7 +388,6 @@ NetworkInterface::wakeup()
         flit *t_flit = inNetLink->consumeLink();
         int vnet = t_flit->get_vnet();
         t_flit->set_dequeue_time(curCycle());
-
         // If a tail flit is received, enqueue into the protocol buffers if
         // space is available. Otherwise, exchange non-tail flits for credits.
         if (t_flit->get_type() == TAIL_ || t_flit->get_type() == HEAD_TAIL_) {
@@ -235,7 +402,16 @@ NetworkInterface::wakeup()
                 sendCredit(t_flit, true);
 
                 // Update stats and delete flit pointer
+                // std::cout << "fanxi added in NI.cc, now incrementStats(t_flit) ing" << std::endl;
                 incrementStats(t_flit);
+                //recv_flit_info(t_flit, m_id-node_num);
+                int data_i = t_flit->get_data();
+                num_recv_packet[data_i] ++;
+                //std::cout <<  "NI"  << m_id << "num_recv_packet = " << num_recv_packet << std::endl;
+                // # received packets ++ here
+				update_recv_packets(m_id-node_num, num_recv_packet[data_i], data_i);
+                update_recv_info(m_id-node_num,t_flit->get_src(),curTick(), data_i);
+                
                 delete t_flit;
             } else {
                 // No space available- Place tail flit in stall queue and set
@@ -330,6 +506,40 @@ NetworkInterface::checkStallQueue()
     return messageEnqueuedThisCycle;
 }
 
+
+//wxy add in 4.1
+//实现NI与PE间的数据数值的传递
+int NetworkInterface::get_send_data(int id)
+{
+	std::string file;
+	file = node2ni_folder+std::to_string(id)+".txt";
+	ifstream infile; 
+    infile.open(file.data());  
+    assert(infile.is_open());   
+    std::string data_line;
+    int read_line_num=0;
+    while(getline(infile, data_line))
+    {
+        if (read_line_num == m_data_num){
+            break;
+        }
+        read_line_num += 1;
+    }
+    std::vector< std::string > data_line_list = split_1(data_line, " ");
+    m_data = atoi(data_line_list[0].c_str());
+    m_flit_num = atoi(data_line_list[1].c_str());
+    infile.close();             //关闭文件输入流 
+    if (read_line_num < m_data_num || data_line == ""){ //文件最后会有个空行
+        return 0;
+    }
+    else {
+        //std::cout<<"fanxi added, get_task, id= " << id <<" linenum=" <<line_num << " task ="<< current_task_line <<std::endl;
+        m_data_num += 1;
+        return 1;   
+    }
+    
+}
+
 // Embed the protocol message into flits
 bool
 NetworkInterface::flitisizeMessage(MsgPtr msg_ptr, int vnet)
@@ -344,10 +554,13 @@ NetworkInterface::flitisizeMessage(MsgPtr msg_ptr, int vnet)
     // This is expressed in terms of bytes/cycle or the flit size
     int num_flits = (int) ceil((double) m_net_ptr->MessageSizeType_to_int(
         net_msg_ptr->getMessageSize())/m_net_ptr->getNiFlitSize());
+    
+    //std::cout<<"wxy add in flitisizeMessage ： getMessageSize = "<<(double) m_net_ptr->MessageSizeType_to_int(
+        //net_msg_ptr->getMessageSize())<<"   ;NiFlitSize = "<<m_net_ptr->getNiFlitSize()<<"  ;flit per massage = "<<std::to_string(num_flits)<<std::endl;
 
     // loop to convert all multicast messages into unicast messages
     for (int ctr = 0; ctr < dest_nodes.size(); ctr++) {
-
+        //std::cout<<"wxy add in flitisizeMessage ： dest_node_size" << dest_nodes.size()<<std::endl;
         // this will return a free output virtual channel
         int vc = calculateVC(vnet);
 
@@ -381,6 +594,12 @@ NetworkInterface::flitisizeMessage(MsgPtr msg_ptr, int vnet)
         // Embed Route into the flits
         // NetDest format is used by the routing table
         // Custom routing algorithms just need destID
+        get_send_data(m_id);
+
+        //num_flits = (num_flits-1)*m_packet_num + 1;
+        num_flits = m_flit_num + 1;
+        //update_recv_info(m_id, num_flits, curCycle());
+
         RouteInfo route;
         route.vnet = vnet;
         route.net_dest = new_net_msg_ptr->getDestination();
@@ -397,7 +616,7 @@ NetworkInterface::flitisizeMessage(MsgPtr msg_ptr, int vnet)
         for (int i = 0; i < num_flits; i++) {
             m_net_ptr->increment_injected_flits(vnet);
             flit *fl = new flit(i, vc, vnet, route, num_flits, new_msg_ptr,
-                curCycle());
+                curCycle(), m_data);
 
             fl->set_src_delay(curCycle() - ticksToCycles(msg_ptr->getTime()));
             m_ni_out_vcs[vc]->insert(fl);
@@ -407,6 +626,27 @@ NetworkInterface::flitisizeMessage(MsgPtr msg_ptr, int vnet)
         m_out_vc_state[vc]->setState(ACTIVE_, curCycle());
     }
     return true ;
+}
+
+//wxy add in 3.20
+//输出VC分配的相关输出，目前已关闭
+void calVC_output(int id, int vnet, int m_vc_per_vnet, int delta, int flag)
+{
+	ofstream OutFile;
+    std::string file;
+	file = "./../output_info/VCallocator/"+std::to_string(id)+".txt";
+    std::string line;
+    if(flag == 1){
+        line = "VC Allocate Success , allocated in vnet:vc_id = " + std::to_string(vnet) + ":" + std::to_string(delta) ;
+    }
+    else{
+        line = "VC allocate Fail , vnet:vc_busy_counter = " + std::to_string(vnet) + ":" + std::to_string(delta);
+    }
+    OutFile.open(file, ios::app);
+	OutFile <<line<<std::endl; 
+    //std::cout<<"wxy added, calVC_output ing, id= " << id <<" m_vc_per_vnet="<<m_vc_per_vnet<<std::endl;
+    //std::cout<<"wxy added, calVC_output ing    "<<line<<std::endl;
+	OutFile.close();        
 }
 
 // Looking for a free output vc
@@ -422,14 +662,19 @@ NetworkInterface::calculateVC(int vnet)
         if (m_out_vc_state[(vnet*m_vc_per_vnet) + delta]->isInState(
                     IDLE_, curCycle())) {
             vc_busy_counter[vnet] = 0;
+            //calVC_output(m_id, vnet, m_vc_per_vnet, delta, 1);
             return ((vnet*m_vc_per_vnet) + delta);
         }
     }
 
     vc_busy_counter[vnet] += 1;
-    panic_if(vc_busy_counter[vnet] > m_deadlock_threshold,
+    //calVC_output(m_id, vnet, m_vc_per_vnet, vc_busy_counter[vnet], 0);
+    panic_if(vc_busy_counter[vnet] > 50000000,
         "%s: Possible network deadlock in vnet: %d at time: %llu \n",
         name(), vnet, curTick());
+    //panic_if(vc_busy_counter[vnet] > m_deadlock_threshold,
+    //    "%s: Possible network deadlock in vnet: %d at time: %llu \n",
+    //    name(), vnet, curTick());
 
     return -1;
 }

@@ -33,6 +33,10 @@
 
 #include "mem/ruby/network/garnet2.0/Router.hh"
 
+#include <fstream>
+#include <cassert>
+#include <sstream> 
+
 #include "base/stl_helpers.hh"
 #include "debug/RubyNetwork.hh"
 #include "mem/ruby/network/garnet2.0/CreditLink.hh"
@@ -61,6 +65,7 @@ Router::Router(const Params *p)
 
     m_input_unit.clear();
     m_output_unit.clear();
+
 }
 
 Router::~Router()

@@ -34,6 +34,8 @@
 #include "mem/ruby/network/garnet2.0/GarnetNetwork.hh"
 
 #include <cassert>
+#include<fstream>
+#include<iostream>
 
 #include "base/cast.hh"
 #include "base/stl_helpers.hh"
@@ -59,6 +61,7 @@ using m5::stl_helpers::deletePointers;
 GarnetNetwork::GarnetNetwork(const Params *p)
     : Network(p)
 {
+    // std::cout << "fanxi added in GarnetNetwork::GarnetNetwork" <<std::endl;
     m_num_rows = p->num_rows;
     m_ni_flit_size = p->ni_flit_size;
     m_vcs_per_vnet = p->vcs_per_vnet;
@@ -137,8 +140,10 @@ GarnetNetwork::GarnetNetwork(const Params *p)
     }
 
     // record the network interfaces
+    std::cout << "fanxi added in GarnetNetwork::GarnetNetwork, record the network interfaces" <<std::endl; 
     for (vector<ClockedObject*>::const_iterator i = p->netifs.begin();
          i != p->netifs.end(); ++i) {
+        std::cout <<"fanxi added, netifs = "<< *i << std::endl;
         NetworkInterface *ni = safe_cast<NetworkInterface *>(*i);
         m_nis.push_back(ni);
         ni->init_net_ptr(this);
@@ -147,8 +152,10 @@ GarnetNetwork::GarnetNetwork(const Params *p)
 
 void
 GarnetNetwork::init()
-{
+{  
     Network::init();
+    //wxy add in 4.7
+    link_utilization.resize(6,0);
 
     for (int i=0; i < m_nodes; i++) {
         m_nis[i]->addNode(m_toNetQueues[i], m_fromNetQueues[i]);
@@ -446,6 +453,41 @@ GarnetNetwork::regStats()
         ;
 }
 
+//wxy add in 4.7
+std::vector<int>
+GarnetNetwork::get_link_utilization(){
+    Cycles curtime = curCycle();
+    if(curtime == link_utilization[0]){
+        link_utilization[0] = 0;
+        return link_utilization;
+    }
+    int activity = 0;
+    int total_link_utilization = 0;
+    int total_ext_in_link_utilization=0;
+    int total_ext_out_link_utilization=0;
+    int total_int_link_utilization=0;
+    for (int i = 0; i < m_networklinks.size(); i++) {
+        link_type type = m_networklinks[i]->getType();
+        activity = m_networklinks[i]->getLinkUtilization();
+
+        if (type == EXT_IN_)
+            total_ext_in_link_utilization += activity;
+        else if (type == EXT_OUT_)
+            total_ext_out_link_utilization += activity;
+        else if (type == INT_)
+            total_int_link_utilization += activity;
+        
+        total_link_utilization += activity;
+    }
+    link_utilization[0] = 1;
+    link_utilization[1] = curtime;
+    link_utilization[2] = total_link_utilization;
+    link_utilization[3] = total_ext_in_link_utilization;
+    link_utilization[4] = total_ext_out_link_utilization;
+    link_utilization[5] = total_int_link_utilization;
+    return link_utilization;
+}
+
 void
 GarnetNetwork::collateStats()
 {
@@ -465,6 +507,8 @@ GarnetNetwork::collateStats()
 
         m_average_link_utilization +=
             (double(activity) / time_delta);
+
+        std::cout<<"wxy add in GN.cc : activity = " << activity << " ; network ="<<i<<" ; time_delta = "<<time_delta<<std::endl;
 
         vector<unsigned int> vc_load = m_networklinks[i]->getVcLoad();
         for (int j = 0; j < vc_load.size(); j++) {

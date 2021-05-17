@@ -33,6 +33,11 @@
 
 #include "mem/ruby/network/garnet2.0/InputUnit.hh"
 
+#include <fstream>
+#include <cassert>
+#include <sstream> 
+
+
 #include "base/stl_helpers.hh"
 #include "debug/RubyNetwork.hh"
 #include "mem/ruby/network/garnet2.0/Credit.hh"
@@ -90,7 +95,13 @@ InputUnit::wakeup()
         t_flit = m_in_link->consumeLink();
         int vc = t_flit->get_vc();
         t_flit->increment_hops(); // for stats
+        //std::string file = "./../output_info/cpu_output_test/"+std::to_string(m_id)+".txt";
+        //std::string line = "InputUnit ";
+        //line.append(std::to_string(t_flit->get_id()));
+        //line.append(" ");
+        //line.append(std::to_string(curTick()));
 
+        //output_setting2(file, line);
         if ((t_flit->get_type() == HEAD_) ||
             (t_flit->get_type() == HEAD_TAIL_)) {
 

@@ -33,6 +33,7 @@
 
 #include <set>
 
+
 #include "base/statistics.hh"
 #include "mem/mem_object.hh"
 #include "mem/port.hh"
@@ -41,6 +42,9 @@
 #include "sim/sim_exit.hh"
 #include "sim/sim_object.hh"
 #include "sim/stats.hh"
+
+//#include <vector>
+using namespace std;
 
 enum TrafficType {BIT_COMPLEMENT_ = 0,
                   BIT_REVERSE_ = 1,
@@ -56,6 +60,30 @@ class Packet;
 class GarnetSyntheticTraffic : public MemObject
 {
   public:
+    int cal_cycles;
+    int packets_to_send ;
+    int dst_num;
+    std::vector<int> send_dst_list;
+    int send_dst;
+    int packets_sent;
+    int cpu_status;
+    int num_packet_wait;
+    int cycles_caled;
+    int total_packet_recv_previous;
+    int cpu_work_stats;
+    std::string current_task_line;
+    int current_line_num;
+    std::vector<std::string> task_file;
+    int working_cpu_flag;
+    int get_task(int id,int line_num);
+    int tick_pre = 0;
+    int communication_tick = 0;
+    int pic_num;
+    int start_node_flag;
+    int start_signal;
+    int wait_cycle;
+    int flit_num;
+
     typedef GarnetSyntheticTrafficParams Params;
     GarnetSyntheticTraffic(const Params *p);
 
@@ -63,7 +91,9 @@ class GarnetSyntheticTraffic : public MemObject
 
     // main simulation loop (one cycle)
     void tick();
-
+    void tick_pre_0();
+    void tick_pre_1();
+    void init_task_file();
     virtual BaseMasterPort &getMasterPort(const std::string &if_name,
                                           PortID idx = InvalidPortID);
 
@@ -81,6 +111,8 @@ class GarnetSyntheticTraffic : public MemObject
         GarnetSyntheticTraffic *tester;
 
       public:
+
+        int num_packet_recv;
 
         CpuPort(const std::string &_name, GarnetSyntheticTraffic *_tester)
             : MasterPort(_name, _tester), tester(_tester)
@@ -111,6 +143,7 @@ class GarnetSyntheticTraffic : public MemObject
     unsigned size;
     int id;
 
+
     std::map<std::string, TrafficType> trafficStringToEnum;
 
     unsigned blockSizeBits;
@@ -136,7 +169,7 @@ class GarnetSyntheticTraffic : public MemObject
 
     void completeRequest(PacketPtr pkt);
 
-    void generatePkt();
+    void generatePkt(int send_dst);
     void sendPkt(PacketPtr pkt);
     void initTrafficType();
 

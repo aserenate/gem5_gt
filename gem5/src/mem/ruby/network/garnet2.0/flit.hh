@@ -46,7 +46,7 @@ class flit
   public:
     flit() {}
     flit(int id, int vc, int vnet, RouteInfo route, int size,
-         MsgPtr msg_ptr, Cycles curTime);
+         MsgPtr msg_ptr, Cycles curTime , int data);
 
     int get_outport() {return m_outport; }
     int get_size() { return m_size; }
@@ -61,6 +61,10 @@ class flit
     flit_type get_type() { return m_type; }
     std::pair<flit_stage, Cycles> get_stage() { return m_stage; }
     Cycles get_src_delay() { return src_delay; }
+    //wxy add in 4.10
+    //输出flit的源节点信息
+    int get_src() { return m_route.src_ni;}
+    int get_data() { return m_data;}
 
     void set_outport(int port) { m_outport = port; }
     void set_time(Cycles time) { m_time = time; }
@@ -111,6 +115,7 @@ class flit
     int m_outport;
     Cycles src_delay;
     std::pair<flit_stage, Cycles> m_stage;
+    int m_data;
 };
 
 inline std::ostream&
