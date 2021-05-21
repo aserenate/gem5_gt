@@ -64,11 +64,11 @@
 # define WORK_SEND          (int(5))
 # define WORK_IDLE          (int(6))
 
-# define Traffic_output_file    (std::string("./../output_info/cpu_output_task_VGG_our_ga_all/"))
-# define Task_folder        (std::string("./../task/task_VGG_our_ga_all/"))
+# define Traffic_output_file    (std::string("./../output_info/lenet_ga_16/"))
+# define Task_folder        (std::string("./../task/lenet_ga_16/"))
 # define node2ni            (std::string("./../recv/node2ni/"))
 # define recv_pac_file      (std::string("./../recv/packet_num/"))
-# define Traffic_node_num   (int(144))
+# define Traffic_node_num   (int(16))
 # define FINISH_PIC         (int(0))
 using namespace std;
 
@@ -77,7 +77,7 @@ int TESTER_NETWORK=0;
 # define node0              (int(18))
 
 int start_node[10] = {18, 17, 2, 11, 20, 5, 10, 7, 8, 9};
-# define start_node_num (int(10))
+# define start_node_num (int(0))
 
 
 //layer1_node [6,18,31,33,29,17,11]
@@ -126,6 +126,7 @@ GarnetSyntheticTraffic::GarnetSyntheticTraffic(const Params *p)
       trafficType(p->traffic_type),
       injRate(p->inj_rate),
       injVnet(p->inj_vnet),
+      if_routerless(p->if_routerless),
       precision(p->precision),
       responseLimit(p->response_limit),
       masterId(p->system->getMasterId(name()))
@@ -978,7 +979,25 @@ GarnetSyntheticTraffic::generatePkt(int send_dst)
     int injReqType = injVnet;
     //std::cout<<" fanx added the generated packet: destination= "<< send_dst << "; injVnet=" <<injVnet << std::endl;
 
-    if (injReqType < 0 || injReqType > 2)
+    // 依据节点数目+src+dst确定注入的Vnet id
+    // 如果是routerless设置，执行以下函数决定vnet；否则维持原始设置
+    if (if_routerless == 1) {
+        if (num_destinations==4) // 2*2 mesh
+            injReqType = vnet_table_2_2[source][send_dst] + 2;
+        else if (num_destinations==16) //4*4 mesh
+            injReqType = vnet_table_4_4[source][send_dst] + 2;
+        else if (num_destinations==36) //6*6 mesh
+            injReqType = vnet_table_6_6[source][send_dst] + 2;
+        else if (num_destinations==64) //8*8 mesh
+            injReqType = vnet_table_8_8[source][send_dst] + 2;
+        else {
+            std::cout << "routerless mesh size is not supported now" << std::endl;
+            assert(0);} 
+        std::cout << "tempadded the injReqType=" << injReqType << " source=" <<source<<" destination=" <<send_dst
+            << "num_destinations" <<num_destinations << std::endl;
+    }
+
+    if (injReqType==-1) // -1 代表random(0,2),其他代表自己本身
     {
         // randomly inject in any vnet
         injReqType = random_mt.random(0, 2);
@@ -995,9 +1014,75 @@ GarnetSyntheticTraffic::generatePkt(int send_dst)
         req = new Request(
             0, 0x0, access_size, flags, masterId, 0x0, 0);
         req->setPaddr(paddr);
-    } else {  // if (injReqType == 2)
+    } 
+    else if (injReqType == 2) {
         // generate packet for virtual network 2
         requestType = MemCmd::WriteReq;
+        req = new Request(paddr, access_size, flags, masterId);
+    }
+    else  if (injReqType == 3) {
+        requestType = MemCmd::WriteReq1;
+        req = new Request(paddr, access_size, flags, masterId);
+    }
+    else  if (injReqType == 4) {
+        requestType = MemCmd::WriteReq2;
+        req = new Request(paddr, access_size, flags, masterId);
+    }
+    else if (injReqType == 5) {
+        requestType = MemCmd::WriteReq3;
+        req = new Request(paddr, access_size, flags, masterId);
+    }
+    else if (injReqType == 6) {
+        requestType = MemCmd::WriteReq4;
+        req = new Request(paddr, access_size, flags, masterId);
+    }
+    else if (injReqType == 7) {
+        requestType = MemCmd::WriteReq5;
+        req = new Request(paddr, access_size, flags, masterId);
+    }
+
+    else if (injReqType == 8) {
+        requestType = MemCmd::WriteReq6;
+        req = new Request(paddr, access_size, flags, masterId);
+    }
+    else if (injReqType == 9) {
+        requestType = MemCmd::WriteReq7;
+        req = new Request(paddr, access_size, flags, masterId);
+    }
+    else if (injReqType == 10) {
+        requestType = MemCmd::WriteReq8;
+        req = new Request(paddr, access_size, flags, masterId);
+    }
+    else if (injReqType == 11) {
+        requestType = MemCmd::WriteReq9;
+        req = new Request(paddr, access_size, flags, masterId);
+    }
+    else if (injReqType == 12) {
+        requestType = MemCmd::WriteReq10;
+        req = new Request(paddr, access_size, flags, masterId);
+    }
+    else if (injReqType == 13) {
+        requestType = MemCmd::WriteReq11;
+        req = new Request(paddr, access_size, flags, masterId);
+    }
+    else if (injReqType == 14) {
+        requestType = MemCmd::WriteReq12;
+        req = new Request(paddr, access_size, flags, masterId);
+    }
+    else if (injReqType == 15) {
+        requestType = MemCmd::WriteReq13;
+        req = new Request(paddr, access_size, flags, masterId);
+    }
+    else if (injReqType == 16) {
+        requestType = MemCmd::WriteReq14;
+        req = new Request(paddr, access_size, flags, masterId);
+    }
+    else if (injReqType == 17) {
+        requestType = MemCmd::WriteReq15;
+        req = new Request(paddr, access_size, flags, masterId);
+    }
+    else if (injReqType == 18) {
+        requestType = MemCmd::WriteReq16;
         req = new Request(paddr, access_size, flags, masterId);
     }
     //std::cout<<"wxy added the generated packet: masterId =  "<< masterId << std::endl;

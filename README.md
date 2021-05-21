@@ -1,4 +1,14 @@
 # README #
+
+## Update ##
+
+使用以下配置进行routerless配置下的仿真：
+```
+--routing-algorithm=custom
+--if_routerless=1 
+```
+
+## Origin ##
 Last Updated: November 27, 2020
 
 This is updated Georgia Tech internal gem5 repository used by Tushar Krishna (http://tusharkrishna.ece.gatech.edu) for his Interconnection Networks course.

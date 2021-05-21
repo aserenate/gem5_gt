@@ -1,0 +1,13 @@
+./build/Garnet_standalone/gem5.opt configs/example/garnet_synth_traffic.py \
+--network=garnet2.0 \
+--num-cpus=16 \
+--num-dirs=16 \
+--topology=Mesh_XY \
+--mesh-rows=4 \
+--sim-cycles=2000 \
+--inj-vnet=2 \
+--injectionrate=0.02 \
+--synthetic=uniform_random \
+--routing-algorithm=custom \
+--if_routerless=1 \
+--link_width_bits=128

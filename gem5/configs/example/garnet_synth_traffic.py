@@ -83,6 +83,9 @@ parser.add_option("--inj-vnet", type="int", default=-1,
 parser.add_option("--link_width_bits", type="int", default=128,
                   help="default = 128 bit")
 
+parser.add_option("--if_routerless", type="int", default=0)
+
+
 #
 # Add the ruby specific and protocol specific options
 #
@@ -113,6 +116,7 @@ cpus = [ GarnetSyntheticTraffic(
                      inj_rate=options.injectionrate,
                      inj_vnet=options.inj_vnet,
                      precision=options.precision,
+                     if_routerless = options.if_routerless,
                      num_dest=options.num_dirs) \
          for i in xrange(options.num_cpus) ]
 

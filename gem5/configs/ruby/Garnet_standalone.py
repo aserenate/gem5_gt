@@ -98,6 +98,23 @@ def create_system(options, full_system, system, dma_ports, ruby_system):
         l1_cntrl.mandatoryQueue = MessageBuffer()
         l1_cntrl.requestFromCache = MessageBuffer()
         l1_cntrl.responseFromCache = MessageBuffer()
+        l1_cntrl.responseFromCache1 = MessageBuffer()
+        l1_cntrl.responseFromCache2 = MessageBuffer()
+        l1_cntrl.responseFromCache3 = MessageBuffer()
+        l1_cntrl.responseFromCache4 = MessageBuffer()
+        l1_cntrl.responseFromCache5 = MessageBuffer()
+        l1_cntrl.responseFromCache6 = MessageBuffer()
+        l1_cntrl.responseFromCache7 = MessageBuffer()
+        l1_cntrl.responseFromCache8 = MessageBuffer()
+        l1_cntrl.responseFromCache9 = MessageBuffer()
+        l1_cntrl.responseFromCache10 = MessageBuffer()
+        l1_cntrl.responseFromCache11 = MessageBuffer()
+        l1_cntrl.responseFromCache12 = MessageBuffer()
+        l1_cntrl.responseFromCache13 = MessageBuffer()
+        l1_cntrl.responseFromCache14 = MessageBuffer()
+        l1_cntrl.responseFromCache15 = MessageBuffer()
+        l1_cntrl.responseFromCache16 = MessageBuffer()
+
         l1_cntrl.forwardFromCache = MessageBuffer()
 
 
@@ -108,9 +125,25 @@ def create_system(options, full_system, system, dma_ports, ruby_system):
         dir_cntrl.requestToDir = MessageBuffer()
         dir_cntrl.forwardToDir = MessageBuffer()
         dir_cntrl.responseToDir = MessageBuffer()
+        dir_cntrl.responseToDir1 = MessageBuffer()
+        dir_cntrl.responseToDir2 = MessageBuffer()
+        dir_cntrl.responseToDir3 = MessageBuffer()
+        dir_cntrl.responseToDir4 = MessageBuffer()
+        dir_cntrl.responseToDir5 = MessageBuffer()
+        dir_cntrl.responseToDir6 = MessageBuffer()
+        dir_cntrl.responseToDir7 = MessageBuffer()
+        dir_cntrl.responseToDir8 = MessageBuffer()
+        dir_cntrl.responseToDir9 = MessageBuffer()
+        dir_cntrl.responseToDir10 = MessageBuffer()
+        dir_cntrl.responseToDir11 = MessageBuffer()
+        dir_cntrl.responseToDir12 = MessageBuffer()
+        dir_cntrl.responseToDir13 = MessageBuffer()
+        dir_cntrl.responseToDir14 = MessageBuffer()
+        dir_cntrl.responseToDir15 = MessageBuffer()
+        dir_cntrl.responseToDir16 = MessageBuffer()
 
 
     all_cntrls = l1_cntrl_nodes + dir_cntrl_nodes
-    ruby_system.network.number_of_virtual_networks = 3
+    ruby_system.network.number_of_virtual_networks = 19 #can just be modified mannually
     topology = create_topology(all_cntrls, options)
     return (cpu_sequencers, dir_cntrl_nodes, topology)

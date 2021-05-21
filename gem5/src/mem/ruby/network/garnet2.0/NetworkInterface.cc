@@ -50,10 +50,10 @@
 using namespace std;
 using m5::stl_helpers::deletePointers;
 
-# define NI_output_file (std::string("./../output_info/cpu_output_task_VGG_our_ga_all/"))
+# define NI_output_file (std::string("./../output_info/lenet_ga_16_NI/"))
 # define recv_packet_folder        (std::string("./../recv/packet_num/"))
 # define node2ni_folder            (std::string("./../recv/node2ni/"))
-# define node_num       (int(144))
+# define node_num       (int(16))
 # define pic_num_1      (int(0))
 
 NetworkInterface::NetworkInterface(const Params *p)
